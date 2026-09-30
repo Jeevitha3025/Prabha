@@ -1,0 +1,122 @@
+Build a mobile-first React web app called PRABHA (प्रभा), an AI-guided entrepreneurship companion for rural Indian women. Use React (Vite) + Tailwind CSS. No external UI libraries, no icon libraries, no CDN fonts. Emoji are the icons. Assume the user is a rural woman with low literacy on a budget Android phone with slow internet. The app must feel voice-first, visual-first, and very simple.
+
+IMPORTANT ARCHITECTURE RULES
+This UI is a front-end shell. I will connect the AI backend afterwards, so:
+1. Put ALL text in /src/i18n/translations.js as { en: {...}, hi: {...}, kn: {...} }. Components only use t('key'). Never hardcode display strings in components. Language can be changed at any time from the Profile screen and the top bar 🌐 button, and the whole UI updates instantly.
+2. Put ALL data/AI calls in /src/services/api.js as async functions that currently return mock data after a short delay, each with a clear "// TODO: replace with real backend call" comment. Functions:
+   sendOtp(phone), verifyOtp(phone, otp), createUser(profile),
+   submitMentorDocuments(files, profile) -> {status:'pending'},
+   getMentorStatus() -> 'pending' | 'approved' | 'rejected',
+   getOpportunities(profile) -> 3 opportunities,
+   getMentorsForUser(profile), getMentorRequests(), acceptMentorRequest(id),
+   bookMentorSlot(mentorId, slot), getChatReply(message, history, lang),
+   submitReadiness(answers) -> {score}, connectGoogleCalendar().
+   Mock OTP for demo is 123456.
+3. Put ALL voice logic in /src/hooks/useVoice.js exposing: startListening(lang, onResult), stopListening(), speak(text, lang), isListening, isSupported. Default implementation uses the browser Web Speech API (SpeechRecognition / speechSynthesis) with locale codes hi-IN, en-IN, kn-IN. If unsupported, hide the mic and show a small friendly text hint instead of failing. Keep this file swappable for a cloud STT/TTS provider later.
+4. App state in a simple context: screen, lang, role, user, profile, opportunity, readinessScore. Persist lang, role, user, profile to localStorage. Use a simple screen-state router (no routing library).
+
+LANGUAGES
+Only 3 languages: हिन्दी (hi), English (en), ಕನ್ನಡ (kn). Show each in its own script. Keep the language list in one config array so more can be added later. Provide real Hindi and Kannada translations for every key.
+
+DESIGN SYSTEM (golden yellow theme)
+Palette:
+- Sunflower #FFDA03 (primary buttons, highlights)
+- British Yellow #EDC001 (secondary yellow, active states)
+- Golden Rod #DAA520 (borders, accents)
+- Dijon #C49102 (decorative accents, icons/borders only, NOT for small text)
+- Parmasan #FDE992 (soft tint cards, chips, selected backgrounds)
+- Light Yellow #FFFFE0 (page background)
+- Dark surface #2B2100 (top bars, splash, dark banners)
+- Dark text #1F1A00, Muted text #6B5B2E, Card white #FFFFFF
+- Success green #15803D (tint #DCFCE7), Alert terracotta #C2410C (tint #FFEDD5). Do not use bright orange.
+Contrast rules (critical): text on Sunflower/British Yellow/Parmasan is ALWAYS dark (#1F1A00). Text on the dark surface is white or #FDE992. Never put white text on any yellow.
+Shape: 16px card radius, 999px pills. Shadow: 0 4px 20px rgba(196,145,2,0.18).
+Type: system-ui, sans-serif. Body 16px, labels 18–20px, absolute minimum 14px anywhere (no 10-12px text). Min tap target 56px. Active/selected states must use border + tint + a ✓ mark, not just colour.
+Every screen has a 🔊 "listen" button that reads the screen's main instruction aloud in the selected language.
+
+SCREEN FLOW
+Splash/Language -> Role selection -> Login (OTP) -> role onboarding -> role home.
+Returning users (user saved in localStorage) skip straight to their home screen.
+
+SCREEN 1 – Splash + Language
+Dark surface bg with a soft golden radial glow behind the logo. "PRABHA" bold white 52px, "प्रभा" in #FDE992 28px, tagline "आपका हुनर, आपका भविष्य" / "Your Skill. Your Future." Section label "CHOOSE YOUR LANGUAGE · भाषा चुनें". 3 large language pills (60px), selected = Sunflower bg with dark text and ✓. CTA (62px, Sunflower, dark bold text): "आगे बढ़ें · Let's Go →", disabled until a language is picked. Selecting a language should immediately speak a short welcome in that language.
+
+SCREEN 2 – Role selection
+Title "Who are you?" (translated). Three big tappable cards (min 120px, colored left border 4px):
+🌾 Entrepreneur (Golden Rod border) – has a skill, wants to start a business
+🤝 Mentor (green border) – wants to guide other women
+📚 Learner (terracotta border) – wants to learn and grow
+Each has a short translated description and a 🔊 button.
+
+SCREEN 3 – Login / signup (all roles)
+Step 1: Name (large input + 🎤 voice fill) and phone number (10-digit, numeric keypad). Button "Send OTP".
+Step 2: 6-box OTP entry, resend timer 30s, verify. On success call createUser and generate a user ID (e.g. PRB-XXXXXX), store it. Show friendly error state for wrong OTP (🙏, never ❌).
+Add a one-line consent note: "We use your voice and location only to help you. Nothing is shared without your permission."
+
+ENTREPRENEUR ONBOARDING ("Complete your profile")
+Large visual blocks, no small fields, progress dots at top:
+1. Skills – multi-select chips, 2-col: 🧵 Tailoring, 🍲 Cooking, 🧶 Weaving, 🌾 Farming, 💅 Beauty, 🏺 Pottery, 📿 Jewellery, 📚 Teaching, 🌿 Herbal, 🎨 Art
+2. Village/District – large input with 🎤 + "📍 Detect" (navigator.geolocation; show "Location captured ✅", handle denial gracefully with a typed fallback)
+3. Time per week – segmented: <5 hrs / 5–10 hrs / 10+ hrs
+4. Resources – chips: 🧵 Sewing Machine, 🔥 Kitchen, 🌾 Land, 🐄 Livestock, 📱 Smartphone, Nothing yet
+5. Education level and family situation (simple large cards, optional): to capture background
+6. Free-text/voice: "Tell us more" textarea with floating 🎤 (pulsing red ring while recording, appends transcript)
+Submit: "🔍 Find My Opportunity →"
+
+ENTREPRENEUR HOME
+Bottom nav (64px, 4 items, active = dark text + Sunflower pill behind icon + dot): 🏠 Home, 📋 Schemes, 🤝 Mentors, 👤 Profile.
+- Home: greeting with name, "Your opportunities" card (→ AI Opportunity Finder), readiness score card, next-step card, and a 🎤 "Ask PRABHA" shortcut.
+- Schemes tab: list of scheme cards (Mudra Shishu, PM Vishwakarma, PMEGP, PMFME, Udyogini, Stand Up India, DAY-NRLM) each with benefit amount, "indicative eligibility" tag, required documents, and an Apply button (modal: "Redirecting to official portal…"). Also a "Ask Yojana Mitra" button that opens the chat overlay.
+- Mentors tab: list of matched mentors (avatar emoji, name, domains, languages, years, rating). Tap -> mentor detail -> "📅 Book a session": pick session type (📞 Phone / 💬 Chat / 📹 Video), pick a date and time slot from mock availability, confirm -> toast "Session requested 🙏" and it appears under "My bookings".
+- Leave a slot for a 3rd home section labelled "More" as an empty placeholder (I will define it later).
+
+OPPORTUNITY FINDER (hero moment)
+Loading (2.5s) on dark surface: spinning 🔍 emoji with cycling translated messages ("Analysing your district…", "Checking local demand…", "Matching government schemes…", "Your opportunities are ready! ✨").
+Results: 3 stacked cards from getOpportunities(profile). Card 1 has Sunflower top border + Parmasan tint (best match), card 2 green top border, card 3 terracotta. Each shows rank badge, emoji, name, one-line description, 3 stat boxes (Startup cost, Time, Demand), scheme line, mentor line, and "Explore This Opportunity" button. Use this mock shape:
+{rank, emoji, name, desc, startup, time, demand, scheme, mentor, whyFits:[3 strings]}
+Mock data:
+1. 🏫 School Uniform Stitching – demand peaks before June & December school terms – ₹8,000 – 8 hrs/wk – High 🔥 – Mudra Shishu up to ₹50,000 – mentor Meena K., Tamil/English, 8 yrs textiles
+2. 🌾 Millet Snack Production – 3 nearby buyers – ₹12,000 – 10 hrs/wk – Growing 📈 – PMFME 35% subsidy – Sunita V., Hindi/English, 15 yrs FMCG
+3. 🌿 Herbal & Home Remedy Products – PM Vishwakarma priority sector – ₹5,000 – 5 hrs/wk – Steady 📊 – PM Vishwakarma up to ₹3 Lakh + tool kit – Asha P., Gujarati/Hindi, 10 yrs wellness
+The "why this fits you" bullets must be generated from the user's saved skills/location via a template function (not hardcoded to tailoring), so the backend can replace it later.
+
+OPPORTUNITY DETAIL
+Header with emoji + name. Sections: (1) Why this fits you (green card, 3 bullets); (2) Journey map – 5 horizontal steps 🔍 Discover → 🤝 Mentor → 📋 Scheme → 📊 Ready → 🛒 Market (completed = green with ✓, active = Sunflower with dark text, future = light grey), visual only; (3) Matched mentor card with [📞 Connect] and [💬 Message] buttons (toast "Connection request sent 🙏") and [📅 Book]; (4) Scheme card with large benefit amount, "indicative eligibility" tag, 3-item document checklist, Apply Now button + modal; (5) Readiness card -> "📊 Start Readiness Quiz"; (6) dark banner: "🛒 Ready? PRABHA connects you to eSARAS – India's official marketplace for SHG women. Score 75+ on readiness to unlock."
+
+READINESS QUIZ OVERLAY (slide up)
+10 questions, one at a time, fade transition, progress bar at top, 4 answer cards (80px), selected = Parmasan bg + Golden Rod border + ✓. Each question has a 🔊 button. Questions and scores live in /src/data/quiz.js with translations for all 3 languages. Use these questions (keep the scoring):
+1 Know 3 people who would buy? [10,6,2,4] | 2 Know cost per unit? [10,6,2,0] | 3 Money to start? [10,7,2,8] | 4 Ever taken an order via WhatsApp? [10,6,3,0] | 5 Save monthly? [10,6,2,5] | 6 Family support? [10,6,2,8] | 7 Know FSSAI/GST? [10,6,2,3] | 8 Ever kept accounts? [10,8,2,5] | 9 Can accept UPI? [10,6,2,4] | 10 If business fails? [10,5,3,8]
+Options per question: 4, in the order the scores are listed.
+Result screen with animated count-up (1.5s), calling submitReadiness:
+- ≥75: green tint, "You're Ready! 🎉", button "🛒 List on eSARAS Now →", opens a congratulation modal with [Open eSARAS] / [Later].
+- 50–74: Parmasan tint, "Almost Ready! 📈", 3 action items, "Retake after completing these".
+- <50: terracotta tint, "Good Start! 🌱", 3 visual step cards, "Start Learning →" (goes to Learner flow).
+
+YOJANA MITRA CHATBOT OVERLAY
+Floating 60px round button (Sunflower bg, dark 📋 emoji), bottom-right above the nav, bounces 3 times on load. Full-screen slide-up overlay, dark header "📋 Yojana Mitra". Welcome message, 3 suggestion chips (loan / which scheme / registration), user bubbles right-aligned in British Yellow with dark text, bot bubbles left-aligned white with Golden Rod border. Typing indicator (3 dots). Input bar: text input 56px + 🎤 (voice via useVoice) + send button. Each bot message has a 🔊 "listen" button. Replies come from getChatReply() in api.js; the mock uses keyword matching (loan/scheme/register, in English and Hindi) with these mock replies: loan (Mudra Shishu ₹50K no collateral, PMEGP up to ₹10L with 25% subsidy, docs list), scheme (PM Vishwakarma, Udyogini Karnataka, PMFME, Stand Up India), registration (Udyam free online, FSSAI ₹100/year for food, GST if turnover > ₹20L), and a default reply. Replies must be returned in the selected language.
+
+MENTOR FLOW
+Onboarding: name (prefilled), domain chips (Food, Textiles, Health, Agri, Digital, Finance, Legal, Logistics), years-of-experience stepper (0–40, 56px circle buttons), languages spoken (multi-select from the 3 app languages), how to help (3 cards: Phone / Chat / Video).
+Verification: upload proofs and certificates (file input accepting images/PDF, show thumbnails, allow multiple, camera capture on mobile). Submit -> "Verification pending" status screen: "Our AI checks your documents, then our team makes the final decision. We will notify you." Mock the states with a status switcher in a small hidden dev menu (pending / approved / rejected). Rejected shows a kind message with a reason and "Upload again".
+Mentor home (only when approved), bottom nav: 📥 Requests, 💬 Mentees (chats), 📅 Calendar, 👤 Profile.
+- Requests: list of incoming mentorship requests (entrepreneur name, village, skill, preferred mode) with Accept / Decline.
+- Mentees: chat list -> simple chat screen (text + voice note button as a stub).
+- Calendar: "Connect Google Calendar" button (calls connectGoogleCalendar, shows connected state), plus a list of upcoming booked sessions.
+- Profile: view and edit details.
+
+LEARNER FLOW
+Onboarding: current situation (4 cards: Homemaker, Student, Daily Wage, Employed), dream domain (6 cards), time per week, learning style (Video / Audio / Reading / Live Class). Then a learning path screen with 3 mock course cards (emoji, title, duration, "Start →").
+
+PROFILE SCREEN (all roles)
+Shows saved data, user ID, language switcher, and "Log out" (clears localStorage).
+
+TRANSITIONS, STATES, PERFORMANCE
+- Screen changes: slide in from right (300ms ease); back reverses. Overlays slide up 300ms. Respect prefers-reduced-motion.
+- Empty states: 80px emoji + friendly translated message. Errors: 🙏 friendly message, never ❌.
+- Loading skeletons instead of spinners where possible.
+- Keep bundle small: no heavy dependencies, no images (emoji and CSS only).
+- Bottom nav and the floating chat button are hidden on Splash, Role, and Login screens.
+- Accessibility: aria-labels on all icon-only buttons, visible focus rings, logical tab order.
+
+DELIVERABLE
+A working app with clean structure: /src/components, /src/screens, /src/i18n, /src/services/api.js, /src/hooks/useVoice.js, /src/data. Everything should work end-to-end on mock data so I can demo the full flow, then swap in real backend calls.
