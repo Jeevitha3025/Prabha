@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 // @ts-ignore JavaScript modules intentionally stay swappable mock services.
 import { makeTranslator, languages } from "./i18n/translations";
@@ -28,8 +28,8 @@ import {
 } from "./services/api";
 import "./index.css";
 
-const skills = ["🧵 Tailoring", "🍲 Cooking", "🧶 Weaving", "🌾 Farming", "💅 Beauty", "🏺 Pottery", "📿 Jewellery", "📚 Teaching", "🌿 Herbal", "🎨 Art"];
-const resources = ["🧵 Sewing Machine", "🔥 Kitchen", "🌾 Land", "🐄 Livestock", "📱 Smartphone", "Nothing yet"];
+const skills = ["🧵 Tailoring", "🍲 Cooking", "🧶 Weaving", "🌾 Farming", "💅 Beauty", "🏺 Pottery", "📿 Jewellery", "📚 Teaching", "🌿 Herbal", "🎨 Art", "🖥️ Digital", "📷 Photography", "🌺 Floristry", "🔧 Repair", "✍️ Other (specify)"];
+const resources = ["🧵 Sewing Machine", "🔥 Kitchen", "🌾 Land", "🐄 Livestock", "📱 Smartphone", "💻 Laptop/PC", "🚲 Vehicle", "Nothing yet", "Other"];
 const schemesFallback: any[] = [];
 const languageOptions = languages as { code: string; label: string; short: string }[];
 
@@ -80,6 +80,48 @@ function RoleScreen({ t, lang, onChoose }: any) {
   return <div className="screen-wrap"><div className="content-width"><Topbar t={t} title="PRABHA" lang={lang} onLanguage={() => undefined} /><div className="hero-card"><span className="eyebrow">{t("welcome")}</span><div className="section-heading"><h1>{t("whoAreYou")}</h1><SpeakButton t={t} lang={lang} text={t("whoAreYou")} /></div><p>{t("readyToBegin")}</p></div><div className="role-grid">{roles.map(([value, icon, title, desc, cls]) => <button className={cls} type="button" key={value} data-testid={`button-role-${value}`} onClick={() => onChoose(value)}><h2>{icon} {t(title)}</h2><p>{t(desc)}</p></button>)}</div></div></div>;
 }
 
+// ─── OTP input with auto-advance ──────────────────────────────────────────────
+function OtpInput({ otp, setOtp, t }: { otp: string[]; setOtp: (v: string[]) => void; t: any }) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const val = e.target.value.replace(/\D/g, "").slice(-1);
+    const next = [...otp];
+    next[index] = val;
+    setOtp(next);
+    if (val && index < 5) refs.current[index + 1]?.focus();
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) refs.current[index - 1]?.focus();
+  };
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length > 0) {
+      const next = pasted.split("").concat(Array(6).fill("")).slice(0, 6);
+      setOtp(next);
+      refs.current[Math.min(pasted.length, 5)]?.focus();
+      e.preventDefault();
+    }
+  };
+  return (
+    <div className="otp-row">
+      {otp.map((digit, index) => (
+        <input
+          key={index}
+          ref={(el) => { refs.current[index] = el; }}
+          inputMode="numeric"
+          maxLength={1}
+          value={digit}
+          aria-label={`${t("enterOtp")} ${index + 1}`}
+          data-testid={`input-otp-${index}`}
+          onChange={(e) => handleChange(e, index)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
+          onPaste={handlePaste}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Login({ t, lang, role, onBack, onDone }: any) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -92,9 +134,43 @@ function Login({ t, lang, role, onBack, onDone }: any) {
   return <div className="screen-wrap"><div className="content-width"><Topbar t={t} title={t("welcome")} lang={lang} onLanguage={() => undefined} onBack={onBack} />
     <div className="card"><span className="eyebrow">{step === 1 ? t("step", { n: 1, total: 2 }) : t("step", { n: 2, total: 2 })}</span>
       {step === 1 ? <><div className="field"><label htmlFor="name">{t("yourName")}</label><div className="input-with-action"><input id="name" value={name} onChange={(e) => setName(e.target.value)} data-testid="input-name" autoComplete="name" />{isSupported && <button className="icon-button" type="button" data-testid="button-voice-name" onClick={() => startListening(lang, setName)}>🎤</button>}</div></div><div className="field"><label htmlFor="phone">{t("phone")}</label><input id="phone" type="tel" inputMode="numeric" maxLength={10} value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} data-testid="input-phone" /></div><button className="btn btn-primary btn-wide" type="button" data-testid="button-send-otp" disabled={!name.trim() || phone.length < 10} onClick={send}>{t("sendOtp")}</button></> :
-      <><p className="muted">{t("otpSent", { phone })}</p><div className="otp-row">{otp.map((digit, index) => <input key={index} inputMode="numeric" maxLength={1} value={digit} aria-label={`${t("enterOtp")} ${index + 1}`} data-testid={`input-otp-${index}`} onChange={(e) => { const next = [...otp]; next[index] = e.target.value.replace(/\D/g, ""); setOtp(next); }} />)}</div>{error && <div className="error-note" role="alert" data-testid="status-otp-error">{error}</div>}<p className="muted small">{t("demoHint")}</p><button className="btn btn-primary btn-wide" type="button" data-testid="button-verify-otp" onClick={verify}>{t("verify")}</button><button className="btn btn-outline btn-wide" type="button" data-testid="button-resend-otp" onClick={send}>{t("resendOtp")}</button></>}
+      <><p className="muted">{t("otpSent", { phone })}</p>
+        <OtpInput otp={otp} setOtp={setOtp} t={t} />
+        {error && <div className="error-note" role="alert" data-testid="status-otp-error">{error}</div>}<p className="muted small">{t("demoHint")}</p><button className="btn btn-primary btn-wide" type="button" data-testid="button-verify-otp" onClick={verify}>{t("verify")}</button><button className="btn btn-outline btn-wide" type="button" data-testid="button-resend-otp" onClick={send}>{t("resendOtp")}</button></>}
       <p className="field-hint" style={{ marginTop: 18 }}>🔒 {t("consent")}</p>
     </div></div></div>;
+}
+
+// ─── OtherSpecify chip helper ──────────────────────────────────────────────────
+function ChipGridWithOther({ items, selected, onToggle, otherLabel = "✍️ Other (specify)" }: { items: string[]; selected: string[]; onToggle: (v: string) => void; otherLabel?: string }) {
+  const [otherText, setOtherText] = useState("");
+  const otherKey = otherText.trim() ? `✍️ ${otherText.trim()}` : "";
+  return <>
+    <div className="chip-grid">
+      {items.map((item) => {
+        const isOther = item === otherLabel;
+        const isSelected = isOther ? selected.some((s) => s.startsWith("✍️")) : selected.includes(item);
+        return <button className={`chip ${isSelected ? "selected" : ""}`} type="button" key={item}
+          data-testid={`chip-skill-${item.slice(2)}`}
+          onClick={() => {
+            if (isOther) {
+              // handled by text input toggle
+              if (isSelected) { const withoutOther = selected.filter((s) => !s.startsWith("✍️")); withoutOther.forEach((s) => { if (selected.includes(s)) return; }); onToggle(selected.find((s) => s.startsWith("✍️")) || ""); }
+            } else onToggle(item);
+          }}>{item}</button>;
+      })}
+    </div>
+    {(selected.some((s) => s.startsWith("✍️")) || otherText) && (
+      <div className="field" style={{ marginTop: 10 }}>
+        <input placeholder="Describe your skill…" value={otherText} onChange={(e) => {
+          setOtherText(e.target.value);
+          const old = selected.find((s) => s.startsWith("✍️"));
+          if (old) onToggle(old);
+          if (e.target.value.trim()) onToggle(`✍️ ${e.target.value.trim()}`);
+        }} />
+      </div>
+    )}
+  </>;
 }
 
 function EntrepreneurOnboarding({ t, lang, profile, onBack, onDone }: any) {
@@ -104,15 +180,23 @@ function EntrepreneurOnboarding({ t, lang, profile, onBack, onDone }: any) {
   const toggle = (key: "skills" | "resources", value: string) => set(key, form[key].includes(value) ? form[key].filter((item: string) => item !== value) : [...form[key], value]);
   const detect = () => navigator.geolocation?.getCurrentPosition((position) => set("location", `${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`), () => set("location", ""));
   const next = () => step < 5 ? setStep(step + 1) : onDone(form);
+  // FIXED: back goes to previous step, only first step goes back to login
+  const back = () => step > 1 ? setStep(step - 1) : onBack();
   const headings = ["chooseSkills", "village", "hours", "resources", "tellMore"];
-  return <div className="screen-wrap"><div className="content-width"><Topbar t={t} title={t("completeProfile")} lang={lang} onLanguage={() => undefined} onBack={onBack} /><div className="progress-dots">{[1, 2, 3, 4, 5].map((item) => <span key={item} className={`progress-dot ${item < step ? "done" : item === step ? "active" : ""}`} />)}</div><p className="muted">{t("step", { n: step, total: 5 })}</p><div className="card"><div className="section-heading"><h2>{t(headings[step - 1])}</h2><SpeakButton t={t} lang={lang} text={t(headings[step - 1])} id="onboarding-listen" /></div>
-    {step === 1 && <><p className="muted">{t("chooseSkillsHint")}</p><div className="chip-grid">{skills.map((item) => <button className={`chip ${form.skills.includes(item) ? "selected" : ""}`} type="button" key={item} data-testid={`chip-skill-${item.slice(2)}`} onClick={() => toggle("skills", item)}>{item}</button>)}</div></>}
-    {step === 2 && <><div className="field"><label htmlFor="village">{t("village")}</label><div className="input-with-action"><input id="village" value={form.location} onChange={(e) => set("location", e.target.value)} data-testid="input-village" /><button className="btn btn-outline" type="button" data-testid="button-detect-location" onClick={detect}>📍 {t("detectLocation")}</button></div>{form.location ? <span className="field-hint" data-testid="status-location">{t("locationCaptured")}</span> : <span className="field-hint">{t("locationDenied")}</span>}</div></>}
-    {step === 3 && <div className="segmented">{["<5 hrs", "5–10 hrs", "10+ hrs"].map((item) => <button className={`chip ${form.hours === item ? "selected" : ""}`} type="button" key={item} data-testid={`button-hours-${item}`} onClick={() => set("hours", item)}>{item}</button>)}</div>}
-    {step === 4 && <div className="chip-grid">{resources.map((item) => <button className={`chip ${form.resources.includes(item) ? "selected" : ""}`} type="button" key={item} data-testid={`chip-resource-${item.slice(2)}`} onClick={() => toggle("resources", item)}>{item}</button>)}</div>}
-    {step === 5 && <><div className="field"><label>{t("education")}</label><div className="choice-grid">{["No formal schooling", "School", "College"].map((item) => <button className={`choice-card ${form.education === item ? "selected" : ""}`} type="button" key={item} data-testid={`choice-education-${item}`} onClick={() => set("education", item)}>{item}</button>)}</div></div><div className="field"><label>{t("family")}</label><div className="choice-grid">{["Supportive", "Needs time", "I decide"].map((item) => <button className={`choice-card ${form.family === item ? "selected" : ""}`} type="button" key={item} data-testid={`choice-family-${item}`} onClick={() => set("family", item)}>{item}</button>)}</div></div><div className="field"><label htmlFor="story">{t("tellMore")}</label><div className="input-with-action"><textarea id="story" value={form.story} placeholder={t("tellMoreHint")} onChange={(e) => set("story", e.target.value)} data-testid="input-story" /><VoiceButton t={t} lang={lang} id="voice-story" onResult={(value) => set("story", `${form.story} ${value}`)} /></div></div></>}
-    <button className="btn btn-primary btn-wide" type="button" data-testid="button-onboarding-next" onClick={next}>{step === 5 ? t("findOpportunity") : t("next")}</button>
-  </div></div></div>;
+  return <div className="screen-wrap"><div className="content-width">
+    <Topbar t={t} title={t("completeProfile")} lang={lang} onLanguage={() => undefined} onBack={back} />
+    <div className="progress-dots">{[1, 2, 3, 4, 5].map((item) => <span key={item} className={`progress-dot ${item < step ? "done" : item === step ? "active" : ""}`} />)}</div>
+    <p className="muted">{t("step", { n: step, total: 5 })}</p>
+    <div className="card">
+      <div className="section-heading"><h2>{t(headings[step - 1])}</h2><SpeakButton t={t} lang={lang} text={t(headings[step - 1])} id="onboarding-listen" /></div>
+      {step === 1 && <><p className="muted">{t("chooseSkillsHint")}</p>
+        <ChipGridWithOther items={skills} selected={form.skills} onToggle={(v) => toggle("skills", v)} /></>}
+      {step === 2 && <><div className="field"><label htmlFor="village">{t("village")}</label><div className="input-with-action"><input id="village" value={form.location} onChange={(e) => set("location", e.target.value)} data-testid="input-village" /><button className="btn btn-outline" type="button" data-testid="button-detect-location" onClick={detect}>📍 {t("detectLocation")}</button></div>{form.location ? <span className="field-hint" data-testid="status-location">{t("locationCaptured")}</span> : <span className="field-hint">{t("locationDenied")}</span>}</div></>}
+      {step === 3 && <div className="segmented">{["<5 hrs", "5–10 hrs", "10+ hrs"].map((item) => <button className={`chip ${form.hours === item ? "selected" : ""}`} type="button" key={item} data-testid={`button-hours-${item}`} onClick={() => set("hours", item)}>{item}</button>)}</div>}
+      {step === 4 && <div className="chip-grid">{resources.map((item) => <button className={`chip ${form.resources.includes(item) ? "selected" : ""}`} type="button" key={item} data-testid={`chip-resource-${item.slice(2)}`} onClick={() => toggle("resources", item)}>{item}</button>)}</div>}
+      {step === 5 && <><div className="field"><label>{t("education")}</label><div className="choice-grid">{["No formal schooling", "School", "College"].map((item) => <button className={`choice-card ${form.education === item ? "selected" : ""}`} type="button" key={item} data-testid={`choice-education-${item}`} onClick={() => set("education", item)}>{item}</button>)}</div></div><div className="field"><label>{t("family")}</label><div className="choice-grid">{["Supportive", "Needs time", "I decide"].map((item) => <button className={`choice-card ${form.family === item ? "selected" : ""}`} type="button" key={item} data-testid={`choice-family-${item}`} onClick={() => set("family", item)}>{item}</button>)}</div></div><div className="field"><label htmlFor="story">{t("tellMore")}</label><div className="input-with-action"><textarea id="story" value={form.story} placeholder={t("tellMoreHint")} onChange={(e) => set("story", e.target.value)} data-testid="input-story" /><VoiceButton t={t} lang={lang} id="voice-story" onResult={(value) => set("story", `${form.story} ${value}`)} /></div></div></>}
+      <button className="btn btn-primary btn-wide" style={{ marginTop: 20 }} type="button" data-testid="button-onboarding-next" onClick={next}>{step === 5 ? t("findOpportunity") : t("next")}</button>
+    </div></div></div>;
 }
 
 function OpportunityFinder({ t, lang, profile, onBack, onOpen }: any) {
@@ -120,7 +204,7 @@ function OpportunityFinder({ t, lang, profile, onBack, onOpen }: any) {
   useEffect(() => { getOpportunities(profile).then(setItems).finally(() => setLoading(false)); }, [profile]);
   useEffect(() => { if (!loading) return undefined; const timer = window.setInterval(() => setMessageIndex((current) => (current + 1) % 4), 800); return () => window.clearInterval(timer); }, [loading]);
   if (loading) return <main className="screen-wrap dark-surface"><div className="content-width loading-stage"><div><span className="loading-emoji">🔍</span><h1>{t("opportunityFinder")}</h1><p>{t(["analysing", "checkingDemand", "matchingSchemes", "opportunitiesReady"][messageIndex])}</p></div></div></main>;
-  return <Shell t={t} title={t("opportunityFinder")} lang={lang} onLanguage={() => undefined} onBack={onBack}><p className="muted">{t("opportunityFinderHint")}</p><div className="section" style={{ display: "grid", gap: 14 }}>{items.map((item, index) => <div className={`card opportunity-card ${index === 0 ? "best" : index === 1 ? "good" : "warm"}`} key={item.rank} data-testid={`card-opportunity-${item.rank}`}><div className="opportunity-body"><div className="opportunity-title"><span className="rank">{item.rank}</span><div><h3>{item.emoji} {item.name}</h3><p className="muted">{item.desc}</p></div></div><div className="stat-grid"><div className="stat"><strong>{item.startup}</strong><span>₹ startup</span></div><div className="stat"><strong>{item.time}</strong><span>time</span></div><div className="stat"><strong>{item.demand}</strong><span>demand</span></div></div><p className="scheme-line">📋 {item.scheme} · 🤝 {item.mentor}</p><button className="btn btn-secondary btn-wide" type="button" data-testid={`button-explore-${item.rank}`} onClick={() => onOpen(item)}>{t("explore")}</button></div></div>)}</div></Shell>;
+  return <Shell t={t} title={t("opportunityFinder")} lang={lang} onLanguage={() => undefined} onBack={onBack}><p className="muted">{t("opportunityFinderHint")}</p><div className="section" style={{ display: "grid", gap: 14 }}>{items.map((item, index) => <div className={`card opportunity-card ${index === 0 ? "best" : index === 1 ? "good" : "warm"}`} key={item.rank} data-testid={`card-opportunity-${item.rank}`}><div className="opportunity-body"><div className="opportunity-title"><div className="rank">{item.rank}</div><div><h3>{item.emoji} {item.name}</h3><p className="muted">{item.desc}</p></div></div><div className="stat-grid"><div className="stat"><strong>{item.startup}</strong><span>₹ startup</span></div><div className="stat"><strong>{item.time}</strong><span>time</span></div><div className="stat"><strong>{item.demand}</strong><span>demand</span></div></div><p className="scheme-line">📋 {item.scheme} · 🤝 {item.mentor}</p><button className="btn btn-secondary btn-wide" type="button" data-testid={`button-explore-${item.rank}`} onClick={() => onOpen(item)}>{t("explore")}</button></div></div>)}</div></Shell>;
 }
 
 function OpportunityDetail({ t, lang, opportunity, onBack, onQuiz, onChat, onBook, onApply }: any) {
@@ -153,9 +237,10 @@ function Booking({ t, mentor, onClose, onBooked }: any) {
 
 function Quiz({ t, lang, onClose, onResult, onLearning }: any) {
   const [index, setIndex] = useState(0); const [answers, setAnswers] = useState<number[]>([]); const [score, setScore] = useState<number | null>(null); const q = quiz[index];
-  const choose = async (value: number) => { const next = [...answers, value]; if (index < quiz.length - 1) setAnswers(next), setIndex(index + 1); else { const result = await submitReadiness(next); setAnswers(next); setScore(result.score); onResult(result.score); } };
+  const choose = async (value: number) => { const next = [...answers, value]; if (index < quiz.length - 1) { setAnswers(next); setIndex(index + 1); } else { const result = await submitReadiness(next); setAnswers(next); setScore(result.score); onResult(result.score); } };
   return <div className="modal-backdrop"><div className="modal-card" style={{ maxHeight: "92dvh", overflow: "auto" }}>{score === null ? <><div className="section-heading"><h2>{t("quizQuestion", { n: index + 1 })}</h2><button className="icon-button" type="button" data-testid="button-close-quiz" aria-label={t("close")} onClick={onClose}>×</button></div><div className="progress-bar"><span style={{ width: `${((index + 1) / 10) * 100}%` }} /></div><div className="section-heading" style={{ marginTop: 22 }}><h2>{quizQuestions[lang][index]}</h2><SpeakButton t={t} lang={lang} text={quizQuestions[lang][index]} id="quiz-listen" /></div><div style={{ display: "grid", gap: 10 }}>{(q.options[lang] as string[]).map((option: string, optionIndex: number) => <button className="choice-card" style={{ minHeight: 70 }} type="button" key={option} data-testid={`quiz-option-${index}-${optionIndex}`} onClick={() => choose(q.scores[optionIndex])}>{option}</button>)}</div></> : <QuizResult t={t} score={score} onClose={onClose} onLearning={onLearning} />}</div></div>;
 }
+
 function QuizResult({ t, score, onClose, onLearning }: any) {
   const ready = score >= 75; const almost = score >= 50;
   return <><div className={`card ${ready ? "status-approved" : almost ? "tint-card" : "status-rejected"}`}><div className="score-layout"><div className="score-ring">{score}</div><div><span className="eyebrow">{t("score")}</span><h2>{ready ? t("youreReady") : almost ? t("almostReady") : t("goodStart")}</h2></div></div></div>{ready ? <><p>{t("esarasBanner")}</p><button className="btn btn-primary btn-wide" type="button" data-testid="button-list-esaras" onClick={() => onClose("esAras")}>{t("listEsaras")}</button></> : almost ? <><h3>{t("retake")}</h3><ul className="list"><li>✓ {t("actionOne")}</li><li>✓ {t("actionTwo")}</li><li>✓ {t("actionThree")}</li></ul><button className="btn btn-outline btn-wide" type="button" data-testid="button-close-quiz-result" onClick={onClose}>{t("close")}</button></> : <><p>{t("actionOne")}</p><button className="btn btn-primary btn-wide" type="button" data-testid="button-start-learning" onClick={onLearning}>{t("startLearning")}</button></>}</>;
@@ -167,19 +252,113 @@ function Chat({ t, lang, onClose }: any) {
   return <div className="chat-overlay"><div className="chat-panel"><div className="chat-header"><h2>📋 {t("chatTitle")}</h2><button className="icon-button" type="button" data-testid="button-close-chat" aria-label={t("close")} onClick={onClose}>×</button></div><div className="chat-messages">{messages.map((message, index) => <div className={`bubble ${message.from}`} key={`${message.text}-${index}`} data-testid={`message-${index}`}>{message.text}{message.from === "bot" && <button className="icon-button" style={{ display: "block", marginTop: 8 }} type="button" data-testid={`button-listen-message-${index}`} aria-label={t("listen")} onClick={() => speak(message.text, lang)}>🔊</button>}</div>)}{typing && <div className="typing">{t("typing")}</div>}</div><div className="suggestions">{[["loan", "loan"], ["whichScheme", "whichScheme"], ["registration", "registration"]].map(([key, query]) => <button className="suggestion" type="button" key={key} data-testid={`button-suggestion-${key}`} onClick={() => send(query)}>{t(key)}</button>)}</div><div className="chat-input"><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t("typeMessage")} data-testid="input-chat" onKeyDown={(e) => e.key === "Enter" && send()} /><button className="icon-button" type="button" data-testid="button-voice-chat" aria-label={t("listen")} onClick={() => startListening(lang, setInput)}>🎤</button><button className="icon-button" type="button" data-testid="button-send-chat" aria-label={t("submit")} onClick={() => send()}>➤</button></div></div></div>;
 }
 
+// ─── MentorOnboarding: multi-select helpMode + richer options ─────────────────
 function MentorOnboarding({ t, lang, user, onBack, onDone }: any) {
-  const [domains, setDomains] = useState<string[]>([]); const [spoken, setSpoken] = useState<string[]>([lang]); const [years, setYears] = useState(4); const [files, setFiles] = useState<File[]>([]); const [mode, setMode] = useState("Phone");
+  const [domains, setDomains] = useState<string[]>([]);
+  const [spoken, setSpoken] = useState<string[]>([lang]);
+  const [years, setYears] = useState(4);
+  const [files, setFiles] = useState<File[]>([]);
+  const [modes, setModes] = useState<string[]>(["Phone"]); // multi-select now
   const toggle = (list: string[], value: string, setter: any) => setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
-  const submit = async () => { const result = await submitMentorDocuments(files, { name: user.name, domains, spoken, years, mode }); onDone(result.status); };
-  return <div className="screen-wrap"><div className="content-width"><Topbar t={t} title={t("mentorOnboarding")} lang={lang} onLanguage={() => undefined} onBack={onBack} /><div className="card"><div className="field"><label htmlFor="mentor-name">{t("mentorName")}</label><input id="mentor-name" defaultValue={user.name} data-testid="input-mentor-name" /></div><div className="field"><label>{t("domain")}</label><div className="chip-grid">{["Food", "Textiles", "Health", "Agri", "Digital", "Finance", "Legal", "Logistics"].map((item: string) => <button className={`chip ${domains.includes(item) ? "selected" : ""}`} type="button" key={item} data-testid={`chip-domain-${item}`} onClick={() => toggle(domains, item, setDomains)}>{item}</button>)}</div></div><div className="field"><label>{t("experience")}: <strong>{years}</strong></label><div className="button-row"><button className="icon-button" type="button" data-testid="button-years-down" onClick={() => setYears(Math.max(0, years - 1))}>−</button><button className="icon-button" type="button" data-testid="button-years-up" onClick={() => setYears(Math.min(40, years + 1))}>+</button></div></div><div className="field"><label>{t("spokenLanguages")}</label><div className="button-row">{languageOptions.map((item) => <button className={`btn ${spoken.includes(item.code) ? "btn-primary" : "btn-outline"}`} type="button" key={item.code} data-testid={`button-spoken-${item.code}`} onClick={() => toggle(spoken, item.code, setSpoken)}>{item.label}</button>)}</div></div><div className="field"><label>{t("helpMode")}</label><div className="choice-grid">{[["Phone", "📞"], ["Chat", "💬"], ["Video", "📹"]].map(([value, icon]) => <button className={`choice-card ${mode === value ? "selected" : ""}`} type="button" key={value} data-testid={`choice-help-${value}`} onClick={() => setMode(value)}>{icon} {t(value === "Phone" ? "phoneCall" : value.toLowerCase())}</button>)}</div></div><div className="field"><label htmlFor="mentor-files">{t("uploadDocuments")}</label><p className="field-hint">{t("uploadHint")}</p><input id="mentor-files" type="file" accept="image/*,.pdf" multiple capture="environment" data-testid="input-mentor-files" onChange={(e) => setFiles(Array.from(e.target.files || []))} />{files.map((file) => <div className="file-preview" key={file.name}>📄 {file.name}</div>)}</div><button className="btn btn-primary btn-wide" type="button" data-testid="button-submit-verification" onClick={submit}>{t("submitVerification")}</button></div></div></div>;
+  const submit = async () => {
+    const result = await submitMentorDocuments(files, { name: user.name, domains, spoken, years, mode: modes.join(", ") });
+    onDone(result.status);
+  };
+  const allDomains = ["Food", "Textiles", "Health", "Agri", "Digital", "Finance", "Legal", "Logistics", "Craft", "Beauty", "Education", "Other"];
+  return <div className="screen-wrap"><div className="content-width"><Topbar t={t} title={t("mentorOnboarding")} lang={lang} onLanguage={() => undefined} onBack={onBack} />
+    <div className="card">
+      <div className="field"><label htmlFor="mentor-name">{t("mentorName")}</label><input id="mentor-name" defaultValue={user.name} data-testid="input-mentor-name" /></div>
+      <div className="field"><label>{t("domain")} <span className="field-hint">(select all that apply)</span></label>
+        <div className="chip-grid">{allDomains.map((item: string) => <button className={`chip ${domains.includes(item) ? "selected" : ""}`} type="button" key={item} data-testid={`chip-domain-${item}`} onClick={() => toggle(domains, item, setDomains)}>{item}</button>)}</div>
+      </div>
+      <div className="field"><label>{t("experience")}: <strong>{years} yrs</strong></label>
+        <div className="years-stepper">
+          <button className="icon-button" type="button" data-testid="button-years-down" onClick={() => setYears(Math.max(0, years - 1))}>−</button>
+          <span className="years-display">{years}</span>
+          <button className="icon-button" type="button" data-testid="button-years-up" onClick={() => setYears(Math.min(40, years + 1))}>+</button>
+        </div>
+      </div>
+      <div className="field"><label>{t("spokenLanguages")}</label>
+        <div className="chip-grid">{languageOptions.map((item) => <button className={`chip ${spoken.includes(item.code) ? "selected" : ""}`} type="button" key={item.code} data-testid={`button-spoken-${item.code}`} onClick={() => toggle(spoken, item.code, setSpoken)}>{item.label}</button>)}</div>
+      </div>
+      {/* FIXED: multi-select help mode */}
+      <div className="field"><label>{t("helpMode")} <span className="field-hint">(select all that apply)</span></label>
+        <div className="chip-grid">{[["Phone", "📞 Phone Call"], ["Chat", "💬 Text Chat"], ["Video", "📹 Video Call"], ["In-Person", "🤝 In-Person"], ["Group", "👥 Group Session"]].map(([value, label]) =>
+          <button className={`chip ${modes.includes(value) ? "selected" : ""}`} type="button" key={value} data-testid={`choice-help-${value}`} onClick={() => toggle(modes, value, setModes)}>{label}</button>)}
+        </div>
+      </div>
+      <div className="field"><label htmlFor="mentor-files">{t("uploadDocuments")}</label>
+        <p className="field-hint">{t("uploadHint")}</p>
+        <input id="mentor-files" type="file" accept="image/*,.pdf" multiple capture="environment" data-testid="input-mentor-files" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+        {files.map((file) => <div className="file-preview" key={file.name}>📄 {file.name}</div>)}
+      </div>
+      <button className="btn btn-primary btn-wide" style={{ marginTop: 20 }} type="button" data-testid="button-submit-verification" onClick={submit}>{t("submitVerification")}</button>
+    </div>
+  </div></div>;
+}
+
+// ─── MentorPendingPreview: shows what approved state will look like ────────────
+function MentorPendingPreview({ t, user, onChangeStatus }: any) {
+  const [showPreview, setShowPreview] = useState(false);
+  if (showPreview) {
+    return (
+      <div className="card status-approved" style={{ marginTop: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>👁️ Preview: After Approval</h3>
+          <button className="btn btn-outline" style={{ minHeight: 36, padding: "6px 14px" }} type="button" onClick={() => setShowPreview(false)}>Close preview</button>
+        </div>
+        <div className="card tint-card" style={{ marginBottom: 12 }}>
+          <span className="eyebrow">Mentor</span>
+          <h2>{t("hello", { name: user.name })}</h2>
+          <p>Welcome to PRABHA! You can now receive and accept mentee requests.</p>
+        </div>
+        <div className="card" style={{ marginBottom: 8 }}>
+          <h3 style={{ margin: "0 0 8px" }}>📥 Incoming Requests</h3>
+          <div className="card" style={{ marginBottom: 8 }}>
+            <h4 style={{ margin: "0 0 4px" }}>👩🏽 Kavya</h4>
+            <p className="muted small">Mandya · Food products · Phone</p>
+            <div className="button-row" style={{ marginTop: 8 }}>
+              <button className="btn btn-primary" style={{ minHeight: 40 }} type="button">Accept</button>
+              <button className="btn btn-outline" style={{ minHeight: 40 }} type="button">Decline</button>
+            </div>
+          </div>
+        </div>
+        <p className="field-hint">⬆️ This is what you'll see once verified. Your bottom nav will also unlock with Mentees, Calendar & Profile tabs.</p>
+      </div>
+    );
+  }
+  return (
+    <button className="btn btn-outline btn-wide" style={{ marginTop: 12 }} type="button" onClick={() => setShowPreview(true)}>
+      👁️ Preview: What happens after approval?
+    </button>
+  );
 }
 
 function MentorHome({ t, lang, user, onNavigate, onBack, onStatus, initialTab = "mentor-home" }: any) {
   const [tab, setTab] = useState(initialTab); const [requests, setRequests] = useState<any[]>([]); const [status, setStatus] = useState("pending"); const [calendar, setCalendar] = useState(false); const [dev, setDev] = useState(false);
   useEffect(() => { getMentorRequests().then(setRequests); getMentorStatus().then(setStatus); }, []);
   const changeStatus = async (next: string) => { await setMentorStatus(next); setStatus(next); onStatus(next); };
-  if (status !== "approved") return <Shell t={t} title={t("verificationPending")} lang={lang} onLanguage={() => undefined} onBack={onBack}><div className={`card status-${status}`}><div style={{ fontSize: "3rem" }}>{status === "rejected" ? "🙏" : "🕊️"}</div><h2>{status === "rejected" ? t("verificationRejected") : t("verificationPending")}</h2><p>{t("verificationCopy")}</p>{status === "rejected" && <button className="btn btn-primary" type="button" data-testid="button-upload-again" onClick={() => onBack("mentor-onboarding")}>{t("uploadAgain")}</button>}</div><button className="dev-affordance" type="button" aria-label={t("developer")} data-testid="button-dev-menu" onClick={() => setDev(!dev)} />{dev && <div className="card section"><h3>{t("statusSwitcher")}</h3>{["pending", "approved", "rejected"].map((value) => <button className="btn btn-outline" style={{ margin: 4 }} type="button" key={value} data-testid={`button-status-${value}`} onClick={() => changeStatus(value)}>{t(value)}</button>)}</div>}</Shell>;
-  return <Shell t={t} title={t(tab === "mentor-home" ? "mentorRequests" : tab)} lang={lang} onLanguage={() => undefined} nav active={tab} onNavigate={(next: string) => { setTab(next); onNavigate(next); }} role="mentor"><div className="card tint-card"><span className="eyebrow">{t("mentor")}</span><h2>{t("hello", { name: user.name })}</h2><p>{t("readyToBegin")}</p></div>{tab === "mentor-home" && <div className="section" style={{ display: "grid", gap: 12 }}>{requests.map((request) => <div className="card" key={request.id} data-testid={`card-request-${request.id}`}><h2>👩🏽 {request.entrepreneur}</h2><p className="muted">{request.village} · {request.skill} · {request.mode}</p><div className="button-row"><button className="btn btn-primary" type="button" data-testid={`button-accept-${request.id}`} onClick={() => { acceptMentorRequest(request.id); setRequests((items) => items.filter((item: any) => item.id !== request.id)); }}>{t("accept")}</button><button className="btn btn-outline" type="button" data-testid={`button-decline-${request.id}`} onClick={() => setRequests((items) => items.filter((item: any) => item.id !== request.id))}>{t("decline")}</button></div></div>)}</div>}{tab === "mentees" && <div className="section card"><div className="empty"><span className="emoji">💬</span><p>{t("mentorHint")}</p><button className="btn btn-outline" type="button" data-testid="button-voice-note">🎤 {t("voiceNote")}</button></div></div>}{tab === "calendar" && <div className="section"><div className="card">{calendar ? <p className="benefit">{t("calendarConnected")}</p> : <button className="btn btn-primary btn-wide" type="button" data-testid="button-connect-calendar" onClick={() => connectGoogleCalendar().then(() => setCalendar(true))}>📅 {t("calendarConnect")}</button>}</div><div className="card section"><h2>{t("upcoming")}</h2><p className="muted">{t("emptyBookings")}</p></div></div>}<button className="dev-affordance" type="button" aria-label={t("developer")} data-testid="button-dev-menu" onClick={() => setDev(!dev)} />{dev && <div className="card section"><h3>{t("statusSwitcher")}</h3>{["pending", "approved", "rejected"].map((value) => <button className="btn btn-outline" style={{ margin: 4 }} type="button" key={value} data-testid={`button-status-${value}`} onClick={() => changeStatus(value)}>{t(value)}</button>)}</div>}</Shell>;
+  if (status !== "approved") return <Shell t={t} title={t("verificationPending")} lang={lang} onLanguage={() => undefined} onBack={onBack}>
+    <div className={`card status-${status}`}>
+      <div style={{ fontSize: "3rem" }}>{status === "rejected" ? "🙏" : "🕊️"}</div>
+      <h2>{status === "rejected" ? t("verificationRejected") : t("verificationPending")}</h2>
+      <p>{t("verificationCopy")}</p>
+      {status === "rejected" && <button className="btn btn-primary" type="button" data-testid="button-upload-again" onClick={() => onBack("mentor-onboarding")}>{t("uploadAgain")}</button>}
+    </div>
+    {/* Preview of approved state */}
+    <MentorPendingPreview t={t} user={user} onChangeStatus={changeStatus} />
+    <button className="dev-affordance" type="button" aria-label={t("developer")} data-testid="button-dev-menu" onClick={() => setDev(!dev)} />
+    {dev && <div className="card section"><h3>{t("statusSwitcher")}</h3>{["pending", "approved", "rejected"].map((value) => <button className="btn btn-outline" style={{ margin: 4 }} type="button" key={value} data-testid={`button-status-${value}`} onClick={() => changeStatus(value)}>{t(value)}</button>)}</div>}
+  </Shell>;
+
+  return <Shell t={t} title={t(tab === "mentor-home" ? "mentorRequests" : tab)} lang={lang} onLanguage={() => undefined} nav active={tab} onNavigate={(next: string) => { setTab(next); onNavigate(next); }} role="mentor">
+    <div className="card tint-card"><span className="eyebrow">{t("mentor")}</span><h2>{t("hello", { name: user.name })}</h2><p>{t("readyToBegin")}</p></div>
+    {tab === "mentor-home" && <div className="section" style={{ display: "grid", gap: 12 }}>{requests.map((request) => <div className="card" key={request.id} data-testid={`card-request-${request.id}`}><h2>👩🏽 {request.entrepreneur}</h2><p className="muted">{request.village} · {request.skill} · {request.mode}</p><div className="button-row"><button className="btn btn-primary" type="button" data-testid={`button-accept-${request.id}`} onClick={() => { acceptMentorRequest(request.id); setRequests((items) => items.filter((item: any) => item.id !== request.id)); }}>{t("accept")}</button><button className="btn btn-outline" type="button" data-testid={`button-decline-${request.id}`} onClick={() => setRequests((items) => items.filter((item: any) => item.id !== request.id))}>{t("decline")}</button></div></div>)}</div>}
+    {tab === "mentees" && <div className="section card"><div className="empty"><span className="emoji">💬</span><p>{t("mentorHint")}</p><button className="btn btn-outline" type="button" data-testid="button-voice-note">🎤 {t("voiceNote")}</button></div></div>}
+    {tab === "calendar" && <div className="section"><div className="card">{calendar ? <p className="benefit">{t("calendarConnected")}</p> : <button className="btn btn-primary btn-wide" type="button" data-testid="button-connect-calendar" onClick={() => connectGoogleCalendar().then(() => setCalendar(true))}>📅 {t("calendarConnect")}</button>}</div><div className="card section"><h2>{t("upcoming")}</h2><p className="muted">{t("emptyBookings")}</p></div></div>}
+    <button className="dev-affordance" type="button" aria-label={t("developer")} data-testid="button-dev-menu" onClick={() => setDev(!dev)} />
+    {dev && <div className="card section"><h3>{t("statusSwitcher")}</h3>{["pending", "approved", "rejected"].map((value) => <button className="btn btn-outline" style={{ margin: 4 }} type="button" key={value} data-testid={`button-status-${value}`} onClick={() => changeStatus(value)}>{t(value)}</button>)}</div>}
+  </Shell>;
 }
 
 function LearnerOnboarding({ t, lang, onBack, onDone }: any) {

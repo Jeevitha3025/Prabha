@@ -163,3 +163,54 @@ button { cursor: pointer; }
 @media (min-width: 640px) { .language-grid { grid-template-columns: repeat(3,1fr); } .role-grid { grid-template-columns: repeat(3,1fr); } .screen-wrap { padding: 32px 28px 110px; } }
 @media (min-width: 900px) { .screen-wrap { padding-top: 44px; } .content-width { width: min(100%, 820px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+/* ─── PRABHA UI Improvements ─────────────────────────────────── */
+
+/* Fix overlapping button rows */
+.button-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.button-row .btn { flex: 1 1 auto; min-width: 0; }
+
+/* OTP boxes — cleaner, easier to tap */
+.otp-row { display: flex; justify-content: center; gap: 10px; margin: 18px 0; }
+.otp-row input { width: 46px; height: 56px; border: 2px solid #daa520; border-radius: 12px; background: #fff; text-align: center; font-size: 1.5rem; font-weight: 900; flex: 0 0 auto; }
+.otp-row input:focus { border-color: #edc001; outline: 3px solid rgba(218,165,2,.35); }
+
+/* Years stepper */
+.years-stepper { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+.years-display { font-size: 1.5rem; font-weight: 900; min-width: 36px; text-align: center; }
+
+/* Chips — reduce clutter, consistent height */
+.chip { min-height: 50px; padding: 8px 12px; line-height: 1.3; font-size: .93rem; }
+.choice-card { min-height: 72px; padding: 12px; font-size: .95rem; }
+
+/* Card spacing tightened */
+.card { padding: 16px; }
+.section { margin-top: 16px; }
+.field { margin-top: 14px; gap: 6px; }
+
+/* role-card — fix border overlap on small screens */
+.role-card { border-left-width: 5px; }
+
+/* btn-wide inside card — breathe */
+.card .btn-wide { margin-top: 16px; }
+
+/* Separate stacked full-width buttons with gap */
+.card .btn-wide + .btn-wide { margin-top: 10px; }
+
+/* "others specify" input */
+.field input[placeholder] { font-size: .95rem; }
+
+/* Status cards cleaner */
+.status-pending, .status-approved, .status-rejected { padding: 20px; }
+
+/* Journey steps — prevent text overflow on small screens */
+.journey { gap: 4px; }
+.journey-step { font-size: .7rem; padding: 6px 3px; }
+
+/* Mentor preview box */
+.mentor-preview-toggle { background: #f7f3e0; border: 1px dashed #daa520; border-radius: 14px; padding: 14px; margin-top: 12px; font-weight: 700; color: #6b5b2e; text-align: left; width: 100%; }
+
+@media (max-width: 380px) {
+  .otp-row input { width: 40px; height: 50px; font-size: 1.3rem; }
+  .chip { font-size: .86rem; padding: 6px 8px; }
+  .journey-step { font-size: .65rem; }
+}
