@@ -28,16 +28,36 @@ export async function getMentorRequests() { await wait(260); return [
 ]; }
 export async function acceptMentorRequest(id) { await wait(260); return { id, accepted: true }; }
 export async function bookMentorSlot(mentorId, slot) { await wait(420); return { id: `booking-${Date.now()}`, mentorId, slot, status: "requested" }; }
-export async function getChatReply(message, history, lang) {
-  await wait(760);
-  const text = message.toLowerCase();
-  const key = text.includes("loan") || text.includes("लोन") || text.includes("ಸಾಲ") ? "loan" : text.includes("scheme") || text.includes("योजना") || text.includes("ಯೋಜನೆ") ? "scheme" : text.includes("register") || text.includes("पंजी") || text.includes("ನೋಂದಣಿ") ? "registration" : "default";
-  const replies = {
-    en: { loan: "Mudra Shishu gives up to ₹50,000 without collateral. PMEGP can offer up to ₹10 lakh with a subsidy. Keep your ID, bank details, address proof and a simple business plan ready.", scheme: "PM Vishwakarma supports traditional skills. Udyogini helps women entrepreneurs in Karnataka. PMFME supports food businesses, and Stand Up India supports bigger new ventures.", registration: "Udyam registration is free online. FSSAI is about ₹100 per year for food work. GST is needed when turnover crosses ₹20 lakh.", default: "I can help with loans, schemes or registration. Try asking about Mudra loan or which scheme fits you." },
-    hi: { loan: "मुद्रा शिशु बिना गारंटी ₹50,000 तक देता है। PMEGP में ₹10 लाख तक और सब्सिडी मिल सकती है। पहचान, बैंक, पता और सरल योजना रखें।", scheme: "PM विश्वकर्मा पारंपरिक हुनर के लिए है। कर्नाटक की उद्योगिनी महिलाओं की मदद करती है। PMFME खाने के काम और Stand Up India नए बड़े कामों के लिए है।", registration: "उद्यम पंजीकरण मुफ्त है। खाने के काम के लिए FSSAI लगभग ₹100 सालाना है। ₹20 लाख से अधिक बिक्री पर GST चाहिए।", default: "मैं लोन, योजना या पंजीकरण में मदद कर सकता हूँ। मुद्रा लोन या सही योजना के बारे में पूछें।" },
-    kn: { loan: "ಮುದ್ರಾ ಶಿಶು ಯಾವುದೇ ಜಾಮೀನು ಇಲ್ಲದೆ ₹50,000 ವರೆಗೆ ಕೊಡುತ್ತದೆ. PMEGP ₹10 ಲಕ್ಷದವರೆಗೆ ಸಹಾಯ ನೀಡಬಹುದು. ಗುರುತು, ಬ್ಯಾಂಕ್, ವಿಳಾಸ ಮತ್ತು ಸರಳ ಯೋಜನೆ ಸಿದ್ಧವಿರಲಿ.", scheme: "PM ವಿಶ್ವಕರ್ಮ ಸಾಂಪ್ರದಾಯಿಕ ಕೌಶಲ್ಯಗಳಿಗೆ. ಉದ್ಯೋಗಿನಿ ಕರ್ನಾಟಕದ ಮಹಿಳೆಯರಿಗೆ. PMFME ಆಹಾರ ಕೆಲಸಕ್ಕೆ ಮತ್ತು Stand Up India ಹೊಸ ದೊಡ್ಡ ಕೆಲಸಗಳಿಗೆ.", registration: "ಉದ್ಯಮ್ ನೋಂದಣಿ ಉಚಿತ. ಆಹಾರ ಕೆಲಸಕ್ಕೆ FSSAI ವರ್ಷಕ್ಕೆ ಸುಮಾರು ₹100. ₹20 ಲಕ್ಷಕ್ಕಿಂತ ಹೆಚ್ಚು ಮಾರಾಟವಾದರೆ GST ಬೇಕು.", default: "ಸಾಲ, ಯೋಜನೆ ಅಥವಾ ನೋಂದಣಿಯಲ್ಲಿ ಸಹಾಯ ಮಾಡುತ್ತೇನೆ. ಮುದ್ರಾ ಸಾಲ ಅಥವಾ ಸೂಕ್ತ ಯೋಜನೆ ಕೇಳಿ." },
-  };
-  return replies[lang]?.[key] || replies.en[key];
+export async function getChatReply(message, history = [], lang = "en-IN", profile = {}) {
+  try {
+    const response = await fetch("http://localhost:8080/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        language: lang,
+        profile,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Yojana Mitra API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return data.answer;
+  } catch (error) {
+    console.error("Yojana Mitra error:", error);
+
+    return {
+      reply:
+        "Sorry, I couldn't connect to Yojana Mitra right now. Please try again.",
+      schemes: [],
+    };
+  }
 }
 export async function submitReadiness(answers) { await wait(500); return { score: answers.reduce((sum, answer) => sum + Number(answer || 0), 0) }; }
 export async function connectGoogleCalendar() { await wait(500); return { connected: true }; }

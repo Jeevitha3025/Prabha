@@ -1,0 +1,257 @@
+[
+  {
+    "id": "pmfme",
+    "name": "Pradhan Mantri Formalisation of Micro Food Processing Enterprises (PMFME)",
+    "shortName": "PMFME",
+    "state": "all",
+    "categories": [
+      "food processing",
+      "pickle",
+      "snacks",
+      "spices",
+      "food business",
+      "micro enterprise",
+      "women",
+      "SHG"
+    ],
+    "targetUsers": [
+      "individual micro food processing units",
+      "SHGs",
+      "FPOs",
+      "cooperatives"
+    ],
+    "benefit": "Credit-linked capital subsidy of 35% of eligible project cost, subject to a maximum of ₹10 lakh per unit for eligible individual micro food processing units.",
+    "eligibility": [
+      "Eligible individual micro food processing enterprises",
+      "Applicable to eligible new or existing micro food processing units under the scheme guidelines",
+      "SHGs, FPOs and cooperatives can also receive support under applicable components"
+    ],
+    "documents": [
+      "Identity proof",
+      "Address proof",
+      "Bank account details",
+      "Project-related documents",
+      "Documents specified by the implementing authority"
+    ],
+    "keywords": [
+      "pickle",
+      "pickles",
+      "papad",
+      "snacks",
+      "spices",
+      "food processing",
+      "millet",
+      "jam",
+      "sauce",
+      "micro food business"
+    ],
+    "sourceUrl": "https://www.mofpi.gov.in/pmfme/shgs-fpos-co-operatives-individual-micro-food-enterprise"
+  },
+  {
+    "id": "pmegp",
+    "name": "Prime Minister's Employment Generation Programme",
+    "shortName": "PMEGP",
+    "state": "all",
+    "categories": [
+      "new business",
+      "micro enterprise",
+      "manufacturing",
+      "service",
+      "business",
+      "self employment",
+      "women"
+    ],
+    "targetUsers": [
+      "individual entrepreneurs",
+      "new micro enterprises"
+    ],
+    "benefit": "Margin money subsidy is provided under the scheme for eligible new micro-enterprise projects. The maximum project cost covered for subsidy is ₹50 lakh for manufacturing and ₹20 lakh for business/service activities under the revised guidelines.",
+    "eligibility": [
+      "Individual applicants above 18 years of age",
+      "Assistance is intended for eligible new projects",
+      "Additional educational qualification conditions apply for projects above specified cost thresholds"
+    ],
+    "documents": [
+      "Identity proof",
+      "Address proof",
+      "Project report",
+      "Bank details",
+      "Educational qualification documents where applicable"
+    ],
+    "keywords": [
+      "new business",
+      "startup",
+      "manufacturing",
+      "service business",
+      "self employment",
+      "small business",
+      "business loan"
+    ],
+    "sourceUrl": "https://www.kviconline.gov.in/pmegpeportal/dashboard/notification/Revised_PMEGP_Scheme_Guidelines_07122023_compressed.pdf"
+  },
+  {
+    "id": "pm-vishwakarma",
+    "name": "PM Vishwakarma",
+    "shortName": "PM Vishwakarma",
+    "state": "all",
+    "categories": [
+      "artisan",
+      "craft",
+      "traditional occupation",
+      "handicraft",
+      "self employment",
+      "women"
+    ],
+    "targetUsers": [
+      "traditional artisans",
+      "craftspersons"
+    ],
+    "benefit": "The scheme provides support to eligible traditional artisans and craftspeople through components including skill training, toolkit support, digital transaction incentives and credit support.",
+    "eligibility": [
+      "Eligible traditional artisans and craftspeople working with specified trades",
+      "Applicant must satisfy the scheme's age and other eligibility requirements",
+      "Eligibility depends on the applicant's occupation and scheme guidelines"
+    ],
+    "documents": [
+      "Aadhaar",
+      "Mobile number",
+      "Bank account details",
+      "Other documents required during registration"
+    ],
+    "keywords": [
+      "tailoring",
+      "carpenter",
+      "pottery",
+      "blacksmith",
+      "artisan",
+      "craft",
+      "handicraft",
+      "traditional work",
+      "weaving"
+    ],
+    "sourceUrl": "https://pmvishwakarma.gov.in/"
+  },
+  {
+    "id": "mudra",
+    "name": "Pradhan Mantri MUDRA Yojana",
+    "shortName": "PMMY",
+    "state": "all",
+    "categories": [
+      "micro enterprise",
+      "small business",
+      "business loan",
+      "self employment",
+      "women"
+    ],
+    "targetUsers": [
+      "micro and small business entrepreneurs"
+    ],
+    "benefit": "Provides institutional credit support to eligible micro and small business activities through participating lending institutions. Loan products are categorized according to the stage and funding requirement of the enterprise.",
+    "eligibility": [
+      "Eligible micro and small business activities",
+      "Applicant must meet the lending institution's requirements",
+      "Final loan sanction is subject to lender assessment"
+    ],
+    "documents": [
+      "Identity proof",
+      "Address proof",
+      "Business or activity details",
+      "Bank documents",
+      "Other documents requested by the lender"
+    ],
+    "keywords": [
+      "loan",
+      "business loan",
+      "small business",
+      "micro business",
+      "shop",
+      "tailoring",
+      "food business",
+      "working capital"
+    ],
+    "sourceUrl": "https://www.mudra.org.in/"
+  },
+  {
+    "id": "stand-up-india",
+    "name": "Stand-Up India",
+    "shortName": "Stand-Up India",
+    "state": "all",
+    "categories": [
+      "women entrepreneur",
+      "entrepreneurship",
+      "new enterprise",
+      "manufacturing",
+      "services",
+      "trading"
+    ],
+    "targetUsers": [
+      "women entrepreneurs",
+      "SC entrepreneurs",
+      "ST entrepreneurs"
+    ],
+    "benefit": "Facilitates bank loans for eligible greenfield enterprises in manufacturing, services or trading, subject to scheme and lending conditions.",
+    "eligibility": [
+      "Eligible women or SC/ST entrepreneurs",
+      "Enterprise should be a greenfield enterprise",
+      "Applicant must satisfy the applicable scheme and bank requirements"
+    ],
+    "documents": [
+      "Identity proof",
+      "Address proof",
+      "Business plan or project details",
+      "Bank documents",
+      "Documents required by the lending institution"
+    ],
+    "keywords": [
+      "women entrepreneur",
+      "women business",
+      "new enterprise",
+      "startup",
+      "manufacturing",
+      "services",
+      "trading"
+    ],
+    "sourceUrl": "https://www.standupmitra.in/"
+  },
+  {
+    "id": "day-nrlm",
+    "name": "Deendayal Antyodaya Yojana - National Rural Livelihoods Mission",
+    "shortName": "DAY-NRLM",
+    "state": "all",
+    "categories": [
+      "rural women",
+      "self help group",
+      "SHG",
+      "livelihood",
+      "rural entrepreneurship",
+      "women"
+    ],
+    "targetUsers": [
+      "rural women",
+      "women self help groups",
+      "SHG members"
+    ],
+    "benefit": "DAY-NRLM supports rural women through Self Help Groups and livelihood interventions, including support for women-owned and women-governed rural enterprises.",
+    "eligibility": [
+      "Primarily targets rural poor households organized through Self Help Groups and their federations",
+      "Specific support depends on the state rural livelihoods mission and applicable programme component"
+    ],
+    "documents": [
+      "SHG records",
+      "Identity documents",
+      "Bank account details",
+      "Documents required by the relevant state or programme authority"
+    ],
+    "keywords": [
+      "rural woman",
+      "women",
+      "SHG",
+      "self help group",
+      "village business",
+      "livelihood",
+      "rural enterprise",
+      "group business"
+    ],
+    "sourceUrl": "https://nrlm.gov.in/"
+  }
+]
