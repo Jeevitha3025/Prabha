@@ -19,11 +19,11 @@ import {
   getMentorsForUser,
   getOpportunities,
   getSchemes,
-  sendOtp,
+  registerUser,
+  loginUser,
   setMentorStatus,
   submitMentorDocuments,
   submitReadiness,
-  verifyOtp,
 // @ts-ignore
 } from "./services/api";
 import "./index.css";
@@ -123,22 +123,88 @@ function OtpInput({ otp, setOtp, t }: { otp: string[]; setOtp: (v: string[]) => 
 }
 
 function Login({ t, lang, role, onBack, onDone }: any) {
-  const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<"register" | "login">("register");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const { startListening, isSupported } = useVoice();
-  const send = async () => { if (name.trim() && phone.length >= 10) { await sendOtp(phone); setStep(2); setError(""); } };
-  const verify = async () => { const result = await verifyOtp(phone, otp.join("")); if (!result.ok) { setError(t("wrongOtp")); return; } const user = await createUser({ name, phone, role }); onDone(user); };
-  return <div className="screen-wrap"><div className="content-width"><Topbar t={t} title={t("welcome")} lang={lang} onLanguage={() => undefined} onBack={onBack} />
-    <div className="card"><span className="eyebrow">{step === 1 ? t("step", { n: 1, total: 2 }) : t("step", { n: 2, total: 2 })}</span>
-      {step === 1 ? <><div className="field"><label htmlFor="name">{t("yourName")}</label><div className="input-with-action"><input id="name" value={name} onChange={(e) => setName(e.target.value)} data-testid="input-name" autoComplete="name" />{isSupported && <button className="icon-button" type="button" data-testid="button-voice-name" onClick={() => startListening(lang, setName)}>🎤</button>}</div></div><div className="field"><label htmlFor="phone">{t("phone")}</label><input id="phone" type="tel" inputMode="numeric" maxLength={10} value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} data-testid="input-phone" /></div><button className="btn btn-primary btn-wide" type="button" data-testid="button-send-otp" disabled={!name.trim() || phone.length < 10} onClick={send}>{t("sendOtp")}</button></> :
-      <><p className="muted">{t("otpSent", { phone })}</p>
-        <OtpInput otp={otp} setOtp={setOtp} t={t} />
-        {error && <div className="error-note" role="alert" data-testid="status-otp-error">{error}</div>}<p className="muted small">{t("demoHint")}</p><button className="btn btn-primary btn-wide" type="button" data-testid="button-verify-otp" onClick={verify}>{t("verify")}</button><button className="btn btn-outline btn-wide" type="button" data-testid="button-resend-otp" onClick={send}>{t("resendOtp")}</button></>}
-      <p className="field-hint" style={{ marginTop: 18 }}>🔒 {t("consent")}</p>
-    </div></div></div>;
+
+  const submit = async () => {
+    if (!name.trim() || !email.trim() || password.length < 6) {
+      setError("Please fill all fields. Password must be at least 6 characters.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      if (mode === "register") {
+        await registerUser(name.trim(), email.trim(), password);
+      } else {
+        await loginUser(email.trim(), password);
+      }
+      const user = await createUser({ name: name.trim(), phone: email.trim(), role });
+      onDone(user);
+    } catch (err: any) {
+      const msg = err?.code === "auth/email-already-in-use"
+        ? "Account exists — switch to Sign in below."
+        : err?.code === "auth/user-not-found" || err?.code === "auth/wrong-password"
+        ? "Wrong email or password."
+        : err?.message || "Something went wrong.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="screen-wrap"><div className="content-width">
+      <Topbar t={t} title={t("welcome")} lang={lang} onLanguage={() => undefined} onBack={onBack} />
+      <div className="card">
+        <span className="eyebrow">{mode === "register" ? "Create your account" : "Welcome back"}</span>
+        {mode === "register" && (
+          <div className="field">
+            <label htmlFor="name">{t("yourName")}</label>
+            <div className="input-with-action">
+              <input id="name" value={name} onChange={(e) => setName(e.target.value)}
+                autoComplete="name" data-testid="input-name" />
+              {isSupported && <button className="icon-button" type="button"
+                onClick={() => startListening(lang, setName)}>🎤</button>}
+            </div>
+          </div>
+        )}
+        <div className="field">
+          <label htmlFor="email">Email address</label>
+          <input id="email" type="email" value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email" data-testid="input-email" />
+        </div>
+        <div className="field">
+          <label htmlFor="password">Password</label>
+          <input id="password" type="password" value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === "register" ? "new-password" : "current-password"}
+            data-testid="input-password" />
+        </div>
+        {error && <div className="error-note" role="alert">{error}</div>}
+        <button className="btn btn-primary btn-wide" type="button"
+          disabled={loading || !email.trim() || (mode === "register" && !name.trim()) || password.length < 6}
+          onClick={submit}>
+          {loading ? "Please wait…" : mode === "register" ? "Create account" : "Sign in"}
+        </button>
+        <p className="muted small" style={{ marginTop: 12, textAlign: "center" }}>
+          {mode === "register" ? "Already have an account? " : "New here? "}
+          <button className="btn-link" type="button"
+            style={{ background: "none", border: "none", color: "var(--color-primary, #b8860b)", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+            onClick={() => { setMode(mode === "register" ? "login" : "register"); setError(""); }}>
+            {mode === "register" ? "Sign in" : "Create account"}
+          </button>
+        </p>
+        <p className="field-hint" style={{ marginTop: 10 }}>🔒 {t("consent")}</p>
+      </div>
+    </div></div>
+  );
 }
 
 // ─── OtherSpecify chip helper ──────────────────────────────────────────────────
